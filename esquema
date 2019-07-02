@@ -1,0 +1,47 @@
+Pines Analogicos
+A0 = LDR
+A1 = Entrada 5v para detectar estado de suministro electrico
+A2 = Sensor pir1 (5v cuando no hay movimiento, 0v cuando detecta movimiento)
+A3 = Sensor pir2 (5v cuando no hay movimiento, 0v cuando detecta movimiento)
+
+Pines Digitales
+35 = Rele encendido luz frente (rele inverso de 5v)
+
+Teclado: 22 al 29
+22 = Azul
+23 = Amarillo
+24 = Gris
+25 = Celeste
+26 = Blanco
+27 = Marron
+28 = Naranja
+29 = Violeta
+
+sda = Amarillo
+scl = Verde
+
+5 = Sensor dht12
+
+
+Cableado
+Pir 1
+(+ 12v) -> Rojo
+(- 12v) -> Negro
+com -> Blanco
+NC -> Celeste Oscuro
+
+Pir 2
+(+ 12v) -> Rojo
+(- 12v) -> Negro
+com -> Blanco Opaco
+NC -> Violeta
+
+LDR
+(+ 5v) -> Naranja
+(Analogo) -> Amarillo
+(-) -> Marron
+
+Rele
+(+ 5v) -> Verde
+(- 5v) -> Gris
+Señal -> Celeste
