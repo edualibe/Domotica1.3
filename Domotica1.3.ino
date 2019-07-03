@@ -9,7 +9,7 @@
 #define pir2 A3
 #define SIM900 Serial3
 #define RESTART asm("jmp 0x0000") //comando para reinciar el arduino
-#define luz 35
+#define luz 36
 #define off HIGH
 #define on LOW
 

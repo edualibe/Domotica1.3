@@ -5,7 +5,7 @@ A2 = Sensor pir1 (5v cuando no hay movimiento, 0v cuando detecta movimiento)
 A3 = Sensor pir2 (5v cuando no hay movimiento, 0v cuando detecta movimiento)
 
 Pines Digitales
-35 = Rele encendido luz frente (rele inverso de 5v)
+36 = Rele encendido luz frente (rele inverso de 5v)
 
 Teclado: 22 al 29
 22 = Azul
@@ -17,8 +17,8 @@ Teclado: 22 al 29
 28 = Naranja
 29 = Violeta
 
-sda = Amarillo
-scl = Verde
+sda (20) = Amarillo
+scl (21) = Verde
 
 5 = Sensor dht12
 
