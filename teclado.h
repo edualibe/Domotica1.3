@@ -1,4 +1,4 @@
-
+#include "speaker.h"
 #include <Keypad.h> //libreria de teclado
 
 //******Configuracion y mapeo de teclas del teclado*******
@@ -17,9 +17,10 @@ byte colPins[COLS] = {26, 27, 28, 29}; // Entrada en placa para las columnas
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS ); //mapeo de las teclas del teclado
 
 String entrada = ""; // Contiene la entrada de teclado
-unsigned long temporizadorteclado=5000; //timepo para ingresar datos por teclado, si se excede ese tiempo se resetea la entrada
+unsigned long temporizadorteclado=6000; //timepo para ingresar datos por teclado, si se excede ese tiempo se resetea la entrada
 unsigned long tiempofinteclado=0; //almacena el tiempo en el que finalizara el ingreso de datos por teclado
 
+speaker speak(2);
 
 class teclado_pad{
   
@@ -34,7 +35,7 @@ class teclado_pad{
       }
       //***** verifica si se presiono una tecla
       if (key != NO_KEY){
-        //speaker_sonidotecla(3000);//envia sonido a la tecla 3000 para beep
+        speak.sonido(1500,50);
         entrada+=key;
         // verifica si es la primer tecla ingresada para que a partir de ese momento comience a correr el temporizador de ingreso de clave
         if (entrada.length()==1){
