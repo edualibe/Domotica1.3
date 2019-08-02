@@ -188,7 +188,6 @@ void loop() {
           if ((valor_pir1<valor_minimopir) || (valor_pir2<valor_minimopir)){
             digitalWrite(luz, on);
             estado_luz = true;
-            estado_anterior_luzesp8266 = true;
             tiempo_inicial_luz = millis();
           }
         }
@@ -201,7 +200,6 @@ void loop() {
           digitalWrite(luz, off);
           tiempo_inicial_luz = 0;
           estado_luz = false;
-          estado_anterior_luzesp8266 = false;
         }
       } 
     }
