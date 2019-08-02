@@ -13,6 +13,7 @@
 #define luz 36
 #define off HIGH
 #define on LOW
+#define luzfrente_esp8266 A8
 
 // inicio instancias de las clases
 pantallalcd pantalla;
@@ -42,9 +43,11 @@ unsigned long chequeo_energiaactual=0;
 int valor_minimoldr = 30; //valor minimo de luminosidad detectada
 int valor_minimoenergia = 400; //valor minimo para detectar corte de energia
 int valor_minimopir = 300; //valor minimo para deteccion de movimiento
+int valor_minimoluzentradaesp8266 = 200; //valor minimo para lectura de activacion de luz del frente por esp8266
 boolean estado_energia; //variable para estado de energia de red
 boolean primeracarga;
 boolean estado_luz = false;
+boolean estado_anterior_luzesp8266 = false;
 int valor_pir1;
 int valor_pir2;
 int valor_ldr;
@@ -82,6 +85,7 @@ void setup() {
   pinMode(pir1, INPUT);
   pinMode(pir2, INPUT);
   pinMode(luz, OUTPUT);
+  pinMode(luzfrente_esp8266, INPUT);
   Serial.begin(9600);
   estado_luz = false;
   tiempo_inicial = millis();  
@@ -96,6 +100,7 @@ void loop() {
     speak.sonidoinicio();
     leer_dht12();
     primeracarga=false;
+    estado_anterior_luzesp8266 = false;
     if (analogRead(entrada_energia)<valor_minimoenergia){
       estado_energia=false;
     } else {
@@ -147,6 +152,28 @@ void loop() {
   }
   //fin chequeo estado del suministro electrico
 
+  // control del estado del pin que envia señal por esp8266 para luz del frente
+  
+  if (analogRead(luzfrente_esp8266)>valor_minimoluzentradaesp8266){
+    if (estado_anterior_luzesp8266==false){
+      estado_anterior_luzesp8266 = true;
+      control_luzauto = false;
+      digitalWrite(luz, on);
+      estado_luz = true;
+      tiempo_inicial_luz = millis();
+    }
+  } else {
+    if (estado_anterior_luzesp8266==true){
+      estado_anterior_luzesp8266 = false;
+      control_luzauto = true;
+      digitalWrite(luz, off);
+      estado_luz = false;
+      tiempo_inicial_luz = millis();
+    }
+  }
+  
+  // fin control de luz por esp8266
+  delay(50);
   if (control_luzauto){
     //chequeo de luminosidad exterior, movimiento en sensor pir y control de luces
     if (millis()>(tiempo_inicial + intervalo_lectura)){
@@ -161,6 +188,7 @@ void loop() {
           if ((valor_pir1<valor_minimopir) || (valor_pir2<valor_minimopir)){
             digitalWrite(luz, on);
             estado_luz = true;
+            estado_anterior_luzesp8266 = true;
             tiempo_inicial_luz = millis();
           }
         }
@@ -173,6 +201,7 @@ void loop() {
           digitalWrite(luz, off);
           tiempo_inicial_luz = 0;
           estado_luz = false;
+          estado_anterior_luzesp8266 = false;
         }
       } 
     }

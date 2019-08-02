@@ -3,6 +3,7 @@ A0 = LDR
 A1 = Entrada 5v para detectar estado de suministro electrico
 A2 = Sensor pir1 (5v cuando no hay movimiento, 0v cuando detecta movimiento)
 A3 = Sensor pir2 (5v cuando no hay movimiento, 0v cuando detecta movimiento)
+A4 = Entrada asociada al GPIO05 de esp8266 para controlar luces del frente
 
 Pines Digitales
 36 = Rele encendido luz frente (rele inverso de 5v)
