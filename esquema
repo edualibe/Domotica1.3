@@ -1,9 +1,11 @@
-Pines Analogicos
+﻿Pines Analogicos
 A0 = LDR
 A1 = Entrada 5v para detectar estado de suministro electrico
 A2 = Sensor pir1 (5v cuando no hay movimiento, 0v cuando detecta movimiento)
 A3 = Sensor pir2 (5v cuando no hay movimiento, 0v cuando detecta movimiento)
-A8 = Entrada asociada al GPIO05 de esp8266 para controlar luces del frente
+A8 = Entrada asociada al GPIO16 (v0) de esp8266 para controlar luces del frente
+A9 = Entrada asociado al GPIO5 (V1) de esp8266 para controlar movimiento de camara
+A10 = Entrada asociado al GPIO4 (V2) de esp8266 (libre)
 
 Pines Digitales
 36 = Rele encendido luz frente (rele inverso de 5v)

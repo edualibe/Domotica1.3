@@ -1,19 +1,22 @@
-// incluyo archivos de clases
+
+// incluyo archivos de clases y otras librerias
 #include "display.h"
 #include "dht.h"
 #include "teclado.h"
-
+#include <Servo.h>
 
 #define ldr A0
 #define entrada_energia A1
 #define pir1 A2
 #define pir2 A3
 #define SIM900 Serial3
+#define ESP8266 Serial2
 #define RESTART asm("jmp 0x0000") //comando para reinciar el arduino
 #define luz 36
 #define off HIGH
 #define on LOW
-#define luzfrente_esp8266 A8
+//#define luzfrente_esp8266 A8
+//#define servocamara A9
 
 // inicio instancias de las clases
 pantallalcd pantalla;
@@ -29,7 +32,7 @@ boolean dht12read = true;
 //definiciones de tiempos
 #define intervalo_chequeoenergia 60000 // tiempo de intervalo en que se chequea el estado del suministro electrico 60000=1 min
 unsigned long tiempo_inicial = 0; //guarda el valor actual del tiempo en cada intervalo de lectura
-unsigned long intervalo_lectura = 500; //1/2 cada 1 segundo hace lectura de estado de luz, ldr y sensores pir
+unsigned long intervalo_lectura = 500; //cada 1/2 segundo hace lectura de estado de luz, ldr y sensores pir
 unsigned long intervalo_encenderluz = 180000; //3 minutos 180000
 unsigned long tiempo_actual; //guarda valor de tiempo actual en cada iteracion cuando la luz esta encendida
 unsigned long tiempo_inicial_luz = 0; //guarda tiempo actual cuando se enciende la luz
@@ -40,10 +43,10 @@ double tiempo_restanteluz = 0; //para calcular tiempo restante del encendido de 
 unsigned long chequeo_energiaactual=0;
 // fin definiciones de tiempo
 
-int valor_minimoldr = 30; //valor minimo de luminosidad detectada
-int valor_minimoenergia = 400; //valor minimo para detectar corte de energia
+int valor_minimoldr = 20; //valor minimo de luminosidad detectada
+int valor_minimoenergia = 200; //valor minimo para detectar corte de energia
 int valor_minimopir = 300; //valor minimo para deteccion de movimiento
-int valor_minimoluzentradaesp8266 = 200; //valor minimo para lectura de activacion de luz del frente por esp8266
+//int valor_minimoluzentradaesp8266 = 300; //valor minimo para lectura de activacion de luz del frente por esp8266
 boolean estado_energia; //variable para estado de energia de red
 boolean primeracarga;
 boolean estado_luz = false;
@@ -53,6 +56,13 @@ int valor_pir2;
 int valor_ldr;
 int pantalla_lcd = 1;
 boolean control_luzauto = true;
+char datos_esp8266;
+String valor_esp8266;
+int posicion_camara = 90;
+
+Servo myservo;  // crea el objeto servo para movimiento de la camara
+
+
 
 //***Variables para manejo de mensajes y llamadas por sim 900
 int respuesta; //respuesta de la conexion grps
@@ -85,12 +95,16 @@ void setup() {
   pinMode(pir1, INPUT);
   pinMode(pir2, INPUT);
   pinMode(luz, OUTPUT);
-  pinMode(luzfrente_esp8266, INPUT);
+  //pinMode(luzfrente_esp8266, INPUT);
+  //pinMode(servocamara, INPUT);
   Serial.begin(9600);
   estado_luz = false;
   tiempo_inicial = millis();  
   digitalWrite(luz, off);
-  SIM900.begin(19200); //Configura velocidad del puerto serie para el SIM9000
+  myservo.attach(7);  // vincula el servo al pin digital 7
+  myservo.write(posicion_camara); //mueve la camara al centro 90
+  SIM900.begin(19200); //Configura velocidad del puerto serie para el SIM9000 conectado a serial 3
+  ESP8266.begin(9600); //configura velocidad del puerto serie para el esp8266 conectado a serial 2
 }
 
 void loop() {
@@ -107,12 +121,13 @@ void loop() {
       estado_energia=true;      
     }
     delay(2000);// parada para estabilizar sensores
+    limpiarbufferesp(); //limpia cualquier dato que pueda tener en buffer el esp8266 wifi
     encenderSIM900(); //enciende el SIM900 en su primer inicio    
   }
   //fin verificacion del reseteo del equipo
 
   //lectura de teclado
-  delay(50);
+  delay(30);
   lecturateclado=teclado.leeteclado();
   ingreso_codigo(lecturateclado);
 
@@ -131,7 +146,7 @@ void loop() {
     chequeo_energiaactual = millis();
     leer_dht12();
     if (analogRead(entrada_energia)<valor_minimoenergia){
-      // no detecto energia en la lectura
+      // sino detecto energia en la lectura
       // consulta si hay cambio de estado
       if (estado_energia==true){
         // hubo cambio en el estado de la energia de "corte de energia"
@@ -152,27 +167,44 @@ void loop() {
   }
   //fin chequeo estado del suministro electrico
 
-  // control del estado del pin que envia señal por esp8266 para luz del frente
-  
-  if (analogRead(luzfrente_esp8266)>valor_minimoluzentradaesp8266){
-    if (estado_anterior_luzesp8266==false){
-      estado_anterior_luzesp8266 = true;
-      control_luzauto = false;
-      digitalWrite(luz, on);
-      estado_luz = true;
-      tiempo_inicial_luz = millis();
+  // lectura de datos en esp8266 wifi
+  if(ESP8266.available()){
+    datos_esp8266 = "";
+    valor_esp8266 = "";
+    while (ESP8266.available()>0){
+      datos_esp8266 = ESP8266.read();
+      valor_esp8266 += datos_esp8266;
     }
-  } else {
-    if (estado_anterior_luzesp8266==true){
-      estado_anterior_luzesp8266 = false;
-      control_luzauto = true;
-      digitalWrite(luz, off);
-      estado_luz = false;
-      tiempo_inicial_luz = millis();
+    //si recibe un valor mas de 100 es la señal de movimiento del servo de la camara
+    if(valor_esp8266.toInt()>99){
+      posicion_camara = map(valor_esp8266.toInt(),100,280,180,0);
+      myservo.write(posicion_camara);
+    }else{
+      //valor 1 para encender la luz del frente
+      if(valor_esp8266.toInt()==1){
+        if (estado_anterior_luzesp8266==false){
+          estado_anterior_luzesp8266 = true;
+          control_luzauto = false;
+          digitalWrite(luz, on);
+          estado_luz = true;
+          tiempo_inicial_luz = millis();
+        }
+      }
+      //valor 2 para apagar la luz del frente y activar el control automatico de encendido
+      if(valor_esp8266.toInt()==2){
+        if (estado_anterior_luzesp8266==true){
+          estado_anterior_luzesp8266 = false;
+          control_luzauto = true;
+          digitalWrite(luz, off);
+          estado_luz = false;
+          tiempo_inicial_luz = millis();
+        }        
+      }
+      
     }
-  }
+  }  
+  //fin lectura esp8266 wifi
   
-  // fin control de luz por esp8266
   delay(50);
   if (control_luzauto){
     //chequeo de luminosidad exterior, movimiento en sensor pir y control de luces
@@ -259,6 +291,7 @@ void loop() {
     }
   }
   // FIN RECEPCION DE DATOS POR SMS
+
   delay(200); //parada para estabilizar flujo
 
 }
@@ -365,7 +398,7 @@ void mensaje_sms(){
 }
 
 void respondo_estado(){
-  float voltage = map((analogRead(entrada_energia)/204.6),0,5,0,220);
+  float voltage = map((analogRead(entrada_energia)/204.6),0,3.5,0,230);
   String mensaje_estado="";
   String mensaje_estadoenergia="";
   String mensaje_estadoluzauto="";
@@ -417,7 +450,10 @@ void leer_dht12(){
       dato_sens = String(hic12);
       dato_humr = String(dpc12);
     }
-    mostrar_th(pantalla_lcd);
+    //si encuentra diferencias entre valores leidos de temperatura y humedad con anterior limpia display y muestra nuevos valores
+    if(t12 != t12_anterior || h12 != h12_anterior || hic12 != hic12_anterior || dpc12 != dpc12_anterior){
+      mostrar_th(pantalla_lcd);    
+    }
 }
 
 void mostrar_th(int option){ 
@@ -431,4 +467,8 @@ void mostrar_th(int option){
     pantalla.escribir("Sens T: " + dato_sens + "c ",0,0);
     pantalla.escribir("Hum R: " + dato_humr + "% ",1,0);       
   }
+}
+
+void limpiarbufferesp(){
+  while ( ESP8266.available() > 0) ESP8266.read(); 
 }
