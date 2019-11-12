@@ -15,8 +15,8 @@
 #define luz 36
 #define off HIGH
 #define on LOW
-//#define luzfrente_esp8266 A8
-//#define servocamara A9
+#define Trigger 3 //sensor ultrasonico para medir nivel de agua del tanque
+#define Echo 4 //sensor ultrasonico para medir nivel de agua del tanque
 
 // inicio instancias de las clases
 pantallalcd pantalla;
@@ -59,9 +59,10 @@ boolean control_luzauto = true;
 char datos_esp8266;
 String valor_esp8266;
 int posicion_camara = 90;
+long t_eco; //timepo que demora en llegar el eco en sensor ultrasonico
+long d_eco; //distancia en centimetros del eco del sensor ultrasonico
 
 Servo myservo;  // crea el objeto servo para movimiento de la camara
-
 
 
 //***Variables para manejo de mensajes y llamadas por sim 900
@@ -95,8 +96,9 @@ void setup() {
   pinMode(pir1, INPUT);
   pinMode(pir2, INPUT);
   pinMode(luz, OUTPUT);
-  //pinMode(luzfrente_esp8266, INPUT);
-  //pinMode(servocamara, INPUT);
+  pinMode(Trigger, OUTPUT);
+  pinMode(Echo, INPUT);
+  digitalWrite(Trigger, LOW);//inicio del sensor ultrasonico
   Serial.begin(9600);
   estado_luz = false;
   tiempo_inicial = millis();  
@@ -471,4 +473,13 @@ void mostrar_th(int option){
 
 void limpiarbufferesp(){
   while ( ESP8266.available() > 0) ESP8266.read(); 
+}
+
+void leer_nivel_tanque(){
+  digitalWrite(Trigger, HIGH);
+  delayMicroseconds(10);//se envia por 10ms un pulso al sensor ultrasonico
+  digitalWrite(Trigger, LOW);
+  
+  t_eco = pulseIn(Echo, HIGH); //obtenemos el ancho del pulso
+  d_eco = t_eco/59;             //escalamos el tiempo a una distancia en cm  
 }
